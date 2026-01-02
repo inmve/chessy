@@ -117,3 +117,4 @@
 - Priority is UX - moves need to be intuitive and fast
 - Analysis speed matters - users expect quick feedback
 - The "divergence point" concept is key - must be immediately clear where alt line stems from main line
+- Prototype-codex: UI is pared down to just the board + evaluation graph; graph uses a minimal dark theme with neutral line, player-only dot fills, error rings, and a played-move label; board shows the resulting position and the move strip focuses on alternatives from the previous position; vertical advantage pendulum sits to the left of the board.

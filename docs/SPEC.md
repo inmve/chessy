@@ -67,8 +67,15 @@ Click "[← Back to move 15]" → Everything resets to original
 
 > Note: The initial implementation should use a **simple Vite app** (not Next.js) to keep things lightweight and fast for iteration.  
 > The existing `front` folder should be kept (not removed), and necessary components can be copied over as needed to the new Vite app.
-- **Board Component**: Show chess position + 3 arrows with labels
-- **Graph Component**: SVG evaluation curve + clickable mistake circles
+- **State Store**: Single source of truth via Zustand (board, graph, navigation, divergence path). All interactions (nav buttons, graph clicks, board move buttons, exploration) update the same store so board + graph stay in sync.
+- **Board Component**: Use `react-chessboard`; show pieces + arrows only. Move labels live in a strip under the board (bigger tap targets). Arrows stay as visual hints; board itself is free of buttons.
+- **Move Strip**: Below the board; larger pills for best moves + user move. No labels on board overlay.
+- **Graph Component**: SVG evaluation curve + clickable mistake circles. Styling:
+  - Minimal dark theme with a neutral light-gray evaluation line.
+  - Constant-size dots: White moves are solid white, Black moves are solid near-black, all with a cool-gray outline.
+  - Errors use outer rings (inaccuracy yellow thin, mistake orange medium, blunder red thick); optional culprit segments from (i-1 → i).
+  - Current marker follows any action (graph click, board move, exploration).
+  - Exploration: when diverged, show a secondary graph from the divergence point; main line after divergence fades to gray, secondary line stays highlighted.
 - **Banner Component**: GitHub-style divergence notification
 - **Explanation Component**: LLM-generated text + ranking info
 - **State Management**: Track game line vs. exploration line
@@ -103,6 +110,54 @@ Click "[← Back to move 15]" → Everything resets to original
 ```
 
 ---
+
+## Tech Stack & Libraries
+
+- **Frontend**: Vite + React + TypeScript. Zustand for state. `chess.js` for FEN/move validation. `react-chessboard` for board rendering. SVG for graphs. Styling with CSS Modules.
+- **Mock/data**: Local mock generators for positions/analyses (no network calls in prototype).
+- **Backend**: Laravel, Stockfish, Lichess API, caching layer, LLM provider (optimized/cached).
+- **Tooling**: TypeScript build via Vite/tsc, ESLint (if configured), npm scripts for dev/build.
+
+## Iteration 3 (current updates)
+
+- Graph visuals: minimal dark theme with a single neutral light-gray evaluation line and constant-size move dots. Dot fill encodes player only (White = solid white, Black = solid near-black). All dots use the same cool-gray outline purely for legibility; no size scaling by error magnitude. Errors are encoded with an outer ring around the dot (same dot size): inaccuracy = thin yellow ring, mistake = medium orange ring, blunder = thicker red ring. Rings are the loudest elements; line/grid/axes stay subdued. Optional culprit segment per error (i-1 -> i): directional gradient from severity hue at ~0.05 alpha into the error point at ~0.55 alpha, same or +1px stroke, rounded caps; fall back to solid muted segment (~0.45 alpha) if cluttered.
+- Prototype UI: focus on just the board (with pendulum + move strip) and evaluation graph; hide top header, move status, explanation panel, navigation bar, and graph title/legend.
+- Advantage pendulum: vertical indicator to the left of the chessboard that flows up/down based on the current evaluation.
+- Move context: graph shows the played move label (colored like the opponent move in Lichess when applicable). Board shows the resulting position after that move, while the move strip lists the played move plus alternatives from the previous position; selecting an alternative replaces the played move instead of advancing to next moves.
+
+## Iteration 2 (previous updates)
+
+- Arbitrary exploration: drag any legal move on the board to explore; arrows are clickable to enter exploration.
+- Arrow overlap/interaction: slight offsets and dashed second-best line to reduce overlap while keeping color semantics (green alternatives, orange user). Arrow clicks trigger the move; drag-to-move still allowed.
+- Mobile layout tweaks: reduced padding/spacing at smaller widths, legend wraps, move strip stacks vertically on narrow screens, nav and banner adjust for touch, chessboard scales to container width.
+
+## Implementation Details (frontend prototype)
+
+- **State shape (Zustand)**: `{ moveNumber, totalMoves, positionFen, analysis, explorationPath[], isDiverged, graphData, goToMove(n), exploreMove(move), returnToOriginal(), nextMove(), prevMove() }`. All UI (board, graph, nav, move strip) reads/writes this store so a single action updates everything.
+- **Board**: `react-chessboard` shows pieces + arrows only (no labels on the board). Arrows remain for visual hints. Labels move to a dedicated strip below the board with larger pill buttons for best moves + user move. Board stays clean.
+- **Arbitrary exploration**: Disabled in the current iteration so the board focuses on the played move and its alternatives (no next-move suggestions).
+- **Arrows interaction**: Board shows only the played-move arrow in the current position; alternatives live in the move strip.
+- **Move strip**: Under the board. Pills for rank 1, rank 2, and user move; bigger tap targets; clicking invokes `exploreMove`.
+- **Move strip (exploration)**: Always show the played move plus alternatives from the previous position; selecting an alternative replaces the played move (no next-move list).
+- **Mobile layout**:
+  - Reduce app padding and card spacing at ≤700px; tighten typography.
+  - Move strip becomes a vertical list at ≤520px with full-width buttons for easy tapping.
+  - Reduce graph height on small screens (≈170–190px).
+  - Pendulum stacks above the board on narrow widths and shrinks slightly.
+  - Chessboard scales to the available container width (no fixed minimum) to avoid zoomed/cropped board on small screens.
+- **Graph (mainline)**:
+  - Neutral light-gray line with constant-size dots; dot fill shows mover (White = white, Black = near-black), cool-gray outline for all dots.
+  - Errors use outer rings: inaccuracy thin yellow, mistake medium orange, blunder thicker red; optional culprit segments with severity gradient (or solid muted when clustered).
+  - Current marker is a subtle vertical line that follows any action (graph click, move strip, exploration). The played move label appears above the graph, colored for the opponent when applicable.
+  - Graph clicks snap to the nearest move using SVG viewBox coordinates so responsive scaling does not shift selection.
+- **Graph (exploration)**:
+  - When diverged, render a secondary line starting at the divergence point.
+  - Main line *after* the fork fades to gray (keep circle sizes; gray tint only after divergence).
+  - Secondary line stays highlighted (same styling as mainline when no divergence); dots/rings apply to exploration moves.
+  - Current marker tracks the active line (main or exploration) based on the store.
+- **Navigation coherence**: Board arrows/strip clicks and graph clicks all dispatch to the store; the board position and both graphs update immediately from store state.
+- **Exploration rules**: Enter divergence on alternative selection; graph click jumps to mainline and clears divergence; move strip always reflects the previous-position alternatives.
+- **Data contracts**: Positions keyed by FEN; analyses carry `bestMoves` (top 2), `userMove`, and `moves[10]` list with SAN/uci/from/to/eval/rank/explanation. Graph data carries moveNumber, evaluation, delta, and category (blunder/mistake/inaccuracy/normal).
 
 ## Design Files Created
 

@@ -9,7 +9,16 @@
       "Bash(git commit:*)",
       "Bash(git pull:*)",
       "Bash(git checkout:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(git rm:*)",
+      "Bash(git reset:*)",
+      "Bash(git push:*)",
+      "Bash(gh repo create:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init -p)",
+      "Bash(./node_modules/.bin/tailwindcss:*)"
     ],
     "deny": [],
     "ask": []
