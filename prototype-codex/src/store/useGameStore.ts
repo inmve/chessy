@@ -171,14 +171,25 @@ export const useGameStore = create<GameStoreState>((set) => ({
   exploreMove: (move: MoveAnalysis) => {
     let applied = false
     set((state) => {
-      const originAnalysis =
-        state.exploration.length > 0
-          ? state.exploration[0].originAnalysis
-          : state.analyses[state.currentIndex]
+      const isExploration = state.exploration.length > 0
+      const originAnalysis = isExploration
+        ? state.exploration[state.exploration.length - 1].analysis
+        : state.analyses[state.currentIndex + 1]
+
       if (!originAnalysis) return {}
 
       const currentFen = originAnalysis.position
-      const prevEval = state.graph[state.currentIndex].evaluation
+      const prevEval = isExploration
+        ? state.exploration[state.exploration.length - 1].evaluation
+        : state.graph[state.currentIndex + 1]?.evaluation ?? state.graph[state.currentIndex].evaluation
+
+      // Check if this move puts us back on the main line (convergence)
+      // For now, simpler: if not exploring and move matches next main line move, just nextMove?
+      // But nextMove() is a separate action. Let's keep exploration explicit for now unless requested.
+      // Actually, if we are NOT exploring, and we pick a move, we usually want to START exploration (unless it's the main move).
+      // But the user UI might distinguish "Next" vs "Explore".
+      // If we treat all strip clicks as "Explore", we diverge.
+      // Let's stick to appending to exploration.
 
       const chess = new Chess(currentFen)
       const result = chess.move({ from: move.from, to: move.to, promotion: 'q' })
@@ -188,22 +199,25 @@ export const useGameStore = create<GameStoreState>((set) => ({
       const nextColor: PlayerColor = chess.turn() === 'w' ? 'white' : 'black'
       const newNode = buildExplorationNode(state, move, nextFen, nextColor, originAnalysis, prevEval)
       applied = true
-      return { exploration: [newNode] }
+      return { exploration: [...state.exploration, newNode] }
     })
     return applied
   },
   exploreMoveFromSquares: (from: string, to: string) => {
     let applied = false
     set((state) => {
-      const originAnalysis =
-        state.exploration.length > 0
-          ? state.exploration[0].originAnalysis
-          : state.analyses[state.currentIndex]
+      const isExploration = state.exploration.length > 0
+      const originAnalysis = isExploration
+        ? state.exploration[state.exploration.length - 1].analysis
+        : state.analyses[state.currentIndex + 1]
+
       if (!originAnalysis) return {}
 
       const currentFen = originAnalysis.position
       const currentAnalysis = originAnalysis
-      const baseEval = state.graph[state.currentIndex].evaluation
+      const baseEval = isExploration
+        ? state.exploration[state.exploration.length - 1].evaluation
+        : state.graph[state.currentIndex + 1]?.evaluation ?? state.graph[state.currentIndex].evaluation
 
       const chess = new Chess(currentFen)
       const moveResult = chess.move({ from, to, promotion: 'q' })
@@ -215,7 +229,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
       const moveAnalysis = buildMoveAnalysis({
         move: moveResult,
         baseEval,
-        moveNumber: state.positions[state.currentIndex].moveNumber,
+        moveNumber: originAnalysis.moveNumber + 1, // Next move number
         currentAnalysis,
       })
 
@@ -228,7 +242,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
         baseEval,
       )
       applied = true
-      return { exploration: [newNode] }
+      return { exploration: [...state.exploration, newNode] }
     })
     return applied
   },

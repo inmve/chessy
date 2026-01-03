@@ -29,6 +29,7 @@ export function GameContainer() {
     exploration,
     userColor,
     goToMove,
+    nextMove,
     exploreMove,
     exploreMoveFromSquares,
   } = useGameStore((state) => ({
@@ -39,6 +40,7 @@ export function GameContainer() {
     exploration: state.exploration,
     userColor: state.userColor,
     goToMove: state.goToMove,
+    nextMove: state.nextMove,
     exploreMove: state.exploreMove,
     exploreMoveFromSquares: state.exploreMoveFromSquares,
   }))
@@ -101,9 +103,16 @@ export function GameContainer() {
               />
             </div>
             <MoveStrip
-              bestMoves={originAnalysis.bestMoves}
-              userMove={currentMove}
-              onMoveClick={exploreMove}
+              bestMoves={boardBestMoves}
+              userMove={boardNextMove}
+              onMoveClick={(move) => {
+                // If not exploring and the move matches the next main line move, just advance
+                if (!isDiverged && nextPosition && move.from === nextPosition.from && move.to === nextPosition.to) {
+                  nextMove()
+                  return
+                }
+                exploreMove(move)
+              }}
               showUserMove={true}
             />
           </div>
