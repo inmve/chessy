@@ -69,6 +69,20 @@ export function GameContainer() {
       : undefined
   const currentMoveIsOpponent = moveColor !== userColor
 
+  // Determine the analysis to show on the board (arrows for the *resulting* position)
+  // If exploring, use the active node's analysis (responses to the exploration move)
+  // If main line, use the *next* position's analysis (responses to the played move)
+  const nextAnalysis = analyses[currentIndex + 1]
+  const boardAnalysis = activeNode ? activeNode.analysis : nextAnalysis
+  
+  // If we are at the end of known data or just calculated a state without analysis, fallbacks:
+  const boardBestMoves = boardAnalysis?.bestMoves ?? []
+  // For userMove on the board, we show the *next* move that was played/will be played
+  // If no next move known, we pass a dummy or undefined (ChessBoard handles it?)
+  // Actually ChessBoard expects `userMove` for the arrow. If null, we might need a dummy.
+  // But `userMove` in analysis is the move *from* that position. 
+  const boardNextMove = boardAnalysis?.userMove ?? { from: '', to: '', notation: '', evaluation: 0, rank: 0, explanation: '' }
+
   return (
     <div className={styles.gameShell}>
       <div className={styles.layout}>
@@ -78,11 +92,11 @@ export function GameContainer() {
             <div className={styles.boardStack}>
               <ChessBoard
                 fen={boardFen}
-                bestMoves={originAnalysis.bestMoves}
-                userMove={currentMove}
+                bestMoves={boardBestMoves}
+                userMove={boardNextMove}
                 onArbitraryMove={exploreMoveFromSquares}
                 onArrowMove={exploreMove}
-                showAlternatives={false}
+                showAlternatives={true}
                 allowDragging={false}
               />
             </div>

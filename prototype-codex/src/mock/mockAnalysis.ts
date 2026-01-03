@@ -66,7 +66,7 @@ export function generateAnalysisForPosition({
   const moves = buildMoveList(fen, playerColor, baseEval, moveNumber)
 
   const totalMoves = moves.length
-  let userRank = Math.min(Math.max(3, (moveNumber % 6) + 3), totalMoves)
+  const userRank = Math.min(Math.max(3, (moveNumber % 6) + 3), totalMoves)
 
   const hintedIndex = userMoveHint
     ? moves.findIndex(
