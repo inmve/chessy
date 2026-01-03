@@ -100,13 +100,13 @@ export function GameContainer() {
                 allowDragging={false}
               />
             </div>
+            <MoveStrip
+              bestMoves={originAnalysis.bestMoves}
+              userMove={currentMove}
+              onMoveClick={exploreMove}
+              showUserMove={true}
+            />
           </div>
-          <MoveStrip
-            bestMoves={originAnalysis.bestMoves}
-            userMove={currentMove}
-            onMoveClick={exploreMove}
-            showUserMove={true}
-          />
         </div>
         <div className={styles.graphArea}>
           <EvaluationGraph

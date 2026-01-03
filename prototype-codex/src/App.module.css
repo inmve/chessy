@@ -92,7 +92,7 @@
 
 .boardRow {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: center;
   gap: 16px;
   width: 100%;
@@ -132,9 +132,9 @@
 
 .moveStrip {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
   gap: 10px;
+  min-width: 180px;
 }
 
 .moveButton {
@@ -148,6 +148,7 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   background: #e5e7eb;
   transition: transform 0.12s, filter 0.12s;
+  text-align: left;
 }
 
 .moveButton:hover {
