@@ -8,6 +8,8 @@ import type { PlayerColor } from '../types/analysis'
 import type { GamePosition } from '../types/game'
 import styles from '../App.module.css'
 
+import { ImportGame } from './ImportGame'
+
 const formatMoveLabel = (moveNumber: number, notation: string, playerColor: PlayerColor) => {
   const fullMove = Math.floor((moveNumber + 1) / 2)
   return playerColor === 'white' ? `${fullMove}. ${notation}` : `${fullMove}... ${notation}`
@@ -129,6 +131,7 @@ export function GameContainer() {
           />
         </div>
       </div>
+      <ImportGame />
     </div>
   )
 }

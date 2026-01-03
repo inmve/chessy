@@ -40,6 +40,7 @@ interface GameStoreState {
   prevMove: () => void
   exploreMove: (move: MoveAnalysis) => boolean
   exploreMoveFromSquares: (from: string, to: string) => boolean
+  importGameFromPgn: (pgn: string) => boolean
   returnToOriginal: () => void
 }
 
@@ -245,6 +246,72 @@ export const useGameStore = create<GameStoreState>((set) => ({
       return { exploration: [...state.exploration, newNode] }
     })
     return applied
+  },
+  importGameFromPgn: (pgn: string) => {
+    try {
+      const chess = new Chess()
+      chess.loadPgn(pgn)
+      const history = chess.history({ verbose: true })
+      const positions: MockGameState['positions'] = []
+      let evalScore = 0.1
+
+      const replayChess = new Chess()
+      history.forEach((move, i) => {
+        const fenBefore = replayChess.fen()
+        replayChess.move(move)
+        
+        // Random walk eval simulation
+        evalScore += (Math.random() - 0.5) * 0.8
+        evalScore = Math.max(-3, Math.min(3, evalScore))
+
+        positions.push({
+          moveNumber: i + 1,
+          fen: fenBefore,
+          notation: move.san,
+          playerColor: move.color === 'w' ? 'white' : 'black',
+          from: move.from,
+          to: move.to,
+          evaluation: evalScore,
+        })
+      })
+
+      const analyses = positions.map((pos) =>
+        generateAnalysisForPosition({
+          fen: pos.fen,
+          moveNumber: pos.moveNumber,
+          playerColor: pos.playerColor,
+          baseEval: pos.evaluation,
+          userMoveHint: { notation: pos.notation, from: pos.from, to: pos.to },
+        }),
+      )
+
+      const graph: GraphPoint[] = positions.map((pos, index) => {
+        const prevEval = index === 0 ? 0 : positions[index - 1].evaluation
+        const drop =
+          pos.playerColor === 'white' ? prevEval - pos.evaluation : pos.evaluation - prevEval
+        return {
+          moveNumber: pos.moveNumber,
+          evaluation: pos.evaluation,
+          delta: drop,
+          category: classifyDelta(Math.max(drop, 0)),
+          playerColor: pos.playerColor,
+        }
+      })
+
+      set({
+        currentIndex: 0,
+        exploration: [],
+        positions,
+        analyses,
+        graph,
+        totalMoves: positions.length,
+        userColor: 'white',
+      })
+      return true
+    } catch (e) {
+      console.error('Failed to import PGN:', e)
+      return false
+    }
   },
   returnToOriginal: () => set(() => ({ exploration: [] })),
 }))
