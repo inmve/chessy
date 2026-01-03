@@ -133,40 +133,77 @@
 .moveStrip {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-width: 180px;
+  gap: 12px;
+  min-width: 240px;
+  max-width: 320px;
 }
 
-.moveButton {
-  border: 1px solid #0f172a;
-  border-radius: 999px;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+.moveCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel-2);
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 12px;
   cursor: pointer;
-  color: #0f172a;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-  background: #e5e7eb;
-  transition: transform 0.12s, filter 0.12s;
+  transition: all 0.15s ease;
   text-align: left;
+  position: relative;
+  overflow: hidden;
 }
 
-.moveButton:hover {
+.moveCard:hover {
+  border-color: var(--muted);
   transform: translateY(-2px);
-  filter: brightness(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.alt1 {
-  background: var(--green);
+.moveCardActive {
+  border-color: var(--accent);
+  background: rgba(56, 189, 248, 0.05);
 }
 
-.alt2 {
-  background: var(--lime);
+.moveCardHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
 }
 
-.userMove {
-  background: var(--orange);
+.moveTitle {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
 }
+
+.moveEval {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.moveExplanation {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+/* Color indicators/accents for different move types */
+.moveCard.alt1 {
+  border-left: 4px solid var(--green);
+}
+.moveCard.alt1 .moveEval { color: var(--green); }
+
+.moveCard.alt2 {
+  border-left: 4px solid var(--lime);
+}
+.moveCard.alt2 .moveEval { color: var(--lime); }
+
+.moveCard.userMove {
+  border-left: 4px solid var(--orange);
+}
+.moveCard.userMove .moveEval { color: var(--orange); }
 
 .graphCard {
   display: flex;
