@@ -9,7 +9,7 @@
 ## 30-Second Pitch
 
 **Chessy** analyzes your Lichess games by showing:
-1. **Three moves per position** - Your move + top 2 better alternatives (with ranking)
+1. **Six moves per position** - Your move + top 5 alternatives (with ranking)
 2. **Graph + mistake clicking** - See your blunders at a glance, click to jump
 3. **Interactive exploration** - Click to explore alternatives, see what would have happened
 4. **LLM explanations** - Why each move makes sense (not just engine eval)
@@ -33,7 +33,7 @@ Plus: **Interactive exploration** where you can play out "what if" scenarios and
 ```
 User opens game → Board shows move 15
 ↓
-Sees: 1. Nf3 (0.8) | 2. Be2 (0.7) | 5. Qh5 (0.1, their move)
+Sees: 1. Nf3 (0.8) | 2. Be2 (0.7) | 3. d3 (0.5) | 4. a3 (0.4) | 5. Qh5 (0.1, their move)
 ↓
 Graph shows: whole game at glance, click mistake circle to jump
 ↓
@@ -52,7 +52,7 @@ Board updates: shows position after Nf3
 ↓
 New analysis: "If you played Nf3, opponent's best replies are:"
 ↓
-Shows Black's top 2-3 moves (re-analyzed)
+Shows Black's top 5 moves (re-analyzed)
 ↓
 User can click to explore one move deeper OR click banner to return
 ↓
@@ -79,9 +79,10 @@ Click "[← Back to move 15]" → Everything resets to original
 - **Banner Component**: GitHub-style divergence notification
 - **Explanation Component**: LLM-generated text + ranking info
 - **State Management**: Track game line vs. exploration line
+- **In-browser Stockfish (prototype-codex)**: WASM engine runs locally with a fixed time budget for fast feedback.
 
 ### Backend (Laravel)
-- **Stockfish Integration**: Analyze top 5-10 moves per position
+- **Stockfish Integration**: Analyze top 5 moves per position
 - **Caching Layer**: Store analysis by position hash (same position = same analysis)
 - **LLM Integration**: Generate explanations for top moves + user's move
 - **Lichess API**: Fetch games, OAuth, push notifications
@@ -97,7 +98,7 @@ Click "[← Back to move 15]" → Everything resets to original
 2. Fetch game from Lichess API
    ↓
 3. For each position in game:
-   - Run Stockfish (analyze top 10 moves)
+   - Run Stockfish (analyze top 5 moves)
    - Rank the moves by evaluation
    - Generate LLM explanations for top 2 + user's move
    - Cache this data (position hash → analysis)
@@ -125,6 +126,18 @@ Click "[← Back to move 15]" → Everything resets to original
 - Advantage pendulum: vertical indicator to the left of the chessboard that flows up/down based on the current evaluation.
 - Move context: graph shows the played move label (colored like the opponent move in Lichess when applicable). Board shows the resulting position after that move, while the move strip lists the played move plus alternatives from the previous position; selecting an alternative replaces the played move instead of advancing to next moves.
 
+## Iteration 4 (current decisions)
+
+- Prototype target: `prototype-codex` is the first surface for live analysis wiring.
+- In-browser Stockfish strategy: 500ms time cap with a small depth-grace window (up to +150ms) to reach the minimum depth target; returns MultiPV=5 (top 5 lines).
+- Progressive refinement: show the first eval quickly, then improve as depth increases until the cap is reached.
+- Navigation priority: cancel the current analysis immediately when the user moves to a new position.
+- UX stability: avoid reordering already-shown moves; only append newly discovered alternatives to prevent flicker.
+- Arrow colors: all arrows use a light transparent neutral; the made move is emphasized via blue square borders on from/to squares.
+- Square highlight: show the last move made by the opponent (from/to squares), not the user's move.
+- Graph evaluation: replace mock evals with single-PV Stockfish evals for every position. Graph updates progressively as new evals arrive.
+- Analysis priority: MultiPV alternatives only for the current position; graph evals are computed in the background starting from the current move and fanning out.
+
 ## Iteration 2 (previous updates)
 
 - Arbitrary exploration: drag any legal move on the board to explore; arrows are clickable to enter exploration.
@@ -137,7 +150,7 @@ Click "[← Back to move 15]" → Everything resets to original
 - **Board**: `react-chessboard` shows pieces + arrows only (no labels on the board). Arrows remain for visual hints. Labels move to a dedicated strip below the board with larger pill buttons for best moves + user move. Board stays clean.
 - **Arbitrary exploration**: Disabled in the current iteration so the board focuses on the played move and its alternatives (no next-move suggestions).
 - **Arrows interaction**: Board shows only the played-move arrow in the current position; alternatives live in the move strip.
-- **Move strip**: Under the board. Pills for rank 1, rank 2, and user move; bigger tap targets; clicking invokes `exploreMove`.
+- **Move strip**: Under the board. Pills for top 5 + user move; bigger tap targets; clicking invokes `exploreMove`.
 - **Move strip (exploration)**: Always show the played move plus alternatives from the previous position; selecting an alternative replaces the played move (no next-move list).
 - **Mobile layout**:
   - Reduce app padding and card spacing at ≤700px; tighten typography.
@@ -157,7 +170,7 @@ Click "[← Back to move 15]" → Everything resets to original
   - Current marker tracks the active line (main or exploration) based on the store.
 - **Navigation coherence**: Board arrows/strip clicks and graph clicks all dispatch to the store; the board position and both graphs update immediately from store state.
 - **Exploration rules**: Enter divergence on alternative selection; graph click jumps to mainline and clears divergence; move strip always reflects the previous-position alternatives.
-- **Data contracts**: Positions keyed by FEN; analyses carry `bestMoves` (top 2), `userMove`, and `moves[10]` list with SAN/uci/from/to/eval/rank/explanation. Graph data carries moveNumber, evaluation, delta, and category (blunder/mistake/inaccuracy/normal).
+- **Data contracts**: Positions keyed by FEN; analyses carry `bestMoves` (top 5), `userMove`, and a `moves` list with SAN/uci/from/to/eval/rank/explanation. In prototype-codex, `moves` is MultiPV=5 plus the user move eval. Graph data carries moveNumber, evaluation, delta, and category (blunder/mistake/inaccuracy/normal).
 
 ## Design Files Created
 
@@ -188,7 +201,7 @@ Before starting architecture/implementation, need answers to:
    - Apply to both players (with perhaps different colors and like filled circle vs unfilled circle)
 
 4. **Analysis depth** - How many moves per position?
-   - Let's start by matching whatever number of moves Lichess currently provides in their analysis (probably top 10), and adjust later if needed.
+   - Prototype-codex uses top 5 (MultiPV=5); adjust later if needed.
 
 5. **Navigation during exploration** - What should < > buttons do?
    - During exploration: 

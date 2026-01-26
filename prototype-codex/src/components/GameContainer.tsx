@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Chess } from 'chess.js'
 import { ChessBoard } from './ChessBoard'
 import { EvaluationGraph } from './EvaluationGraph'
@@ -32,8 +33,11 @@ export function GameContainer() {
     userColor,
     goToMove,
     nextMove,
+    prevMove,
     exploreMove,
     exploreMoveFromSquares,
+    startAnalysis,
+    scheduleGraphAnalysis,
   } = useGameStore((state) => ({
     currentIndex: state.currentIndex,
     positions: state.positions,
@@ -43,8 +47,11 @@ export function GameContainer() {
     userColor: state.userColor,
     goToMove: state.goToMove,
     nextMove: state.nextMove,
+    prevMove: state.prevMove,
     exploreMove: state.exploreMove,
     exploreMoveFromSquares: state.exploreMoveFromSquares,
+    startAnalysis: state.startAnalysis,
+    scheduleGraphAnalysis: state.scheduleGraphAnalysis,
   }))
 
   const basePosition = positions[currentIndex]
@@ -72,6 +79,15 @@ export function GameContainer() {
       ? formatMoveLabel(moveNumber, currentMove.notation, moveColor)
       : undefined
   const currentMoveIsOpponent = moveColor !== userColor
+  const mainlineHighlight =
+    basePosition && basePosition.playerColor !== userColor
+      ? { from: basePosition.from, to: basePosition.to }
+      : null
+  const explorationHighlight =
+    activeNode && activeNode.playerToMove === userColor
+      ? { from: activeNode.entryMove.from, to: activeNode.entryMove.to }
+      : null
+  const highlightedMove = isDiverged ? explorationHighlight : mainlineHighlight
 
   // Determine the analysis to show on the board (arrows for the *resulting* position)
   // If exploring, use the active node's analysis (responses to the exploration move)
@@ -87,6 +103,35 @@ export function GameContainer() {
   // But `userMove` in analysis is the move *from* that position. 
   const boardNextMove = boardAnalysis?.userMove ?? { from: '', to: '', notation: '', evaluation: 0, rank: 0, explanation: '' }
 
+  const analysisFen = boardAnalysis?.position
+
+  useEffect(() => {
+    if (!analysisFen) return
+    startAnalysis(analysisFen)
+  }, [analysisFen, startAnalysis])
+
+  useEffect(() => {
+    scheduleGraphAnalysis(currentIndex)
+  }, [currentIndex, scheduleGraphAnalysis])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest('input, textarea, [contenteditable="true"]')) return
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        nextMove()
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        prevMove()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [nextMove, prevMove])
+
   return (
     <div className={styles.gameShell}>
       <div className={styles.layout}>
@@ -98,6 +143,7 @@ export function GameContainer() {
                 fen={boardFen}
                 bestMoves={boardBestMoves}
                 userMove={boardNextMove}
+                highlightedMove={highlightedMove}
                 onArbitraryMove={exploreMoveFromSquares}
                 onArrowMove={exploreMove}
                 showAlternatives={true}

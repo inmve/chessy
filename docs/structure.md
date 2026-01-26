@@ -34,6 +34,14 @@
 - Lichess authentication
 - Real-time game updates
 
+### Prototype-codex (Vite)
+- Target surface for in-browser Stockfish analysis
+- Fixed 500ms time cap with minimum depth target
+- Progressive refinement with cancellation on navigation
+- Stable move ordering to avoid UI flicker (append-only)
+- Move strip and arrows show up to 5 engine alternatives plus the user move
+- Move color scheme: transparent arrows for all moves; made move highlighted with blue borders on its from/to squares
+
 ### App Directory
 - Separate mobile/desktop application
 - Appears to have analysis and component modules
@@ -118,3 +126,5 @@
 - Analysis speed matters - users expect quick feedback
 - The "divergence point" concept is key - must be immediately clear where alt line stems from main line
 - Prototype-codex: UI is pared down to just the board + evaluation graph; graph uses a minimal dark theme with neutral line, player-only dot fills, error rings, and a played-move label; board shows the resulting position and the move strip focuses on alternatives from the previous position; vertical advantage pendulum sits to the left of the board.
+- Prototype-codex analysis: in-browser Stockfish with MultiPV=5, progressive refinement, and immediate cancel-on-navigation for snappy UX.
+- Prototype-codex graph: evals are now computed via single-PV Stockfish for every position, starting from the current move and filling in the rest progressively.
