@@ -93,9 +93,9 @@ export function EvaluationGraph({
 
   const baseLineStroke = '#cbd5e1'
   const baseLineWidth = 2
-  const baseLineOpacity = 0.45
-  const mutedLineOpacity = 0.2
-  const explorationLineOpacity = 0.65
+  const baseLineOpacity = 0.7
+  const mutedLineOpacity = 0.35
+  const explorationLineOpacity = 0.8
   const dotRadius = 5
   const dotStroke = '#94a3b8'
   const dotStrokeWidth = 1.5

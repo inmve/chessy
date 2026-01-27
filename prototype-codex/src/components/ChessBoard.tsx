@@ -8,9 +8,11 @@ const formatEval = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(2)
 type ArrowMove = {
   move: MoveAnalysis
   color: string
+  key: string
   kind: 'alt1' | 'alt2' | 'alt3' | 'alt4' | 'alt5' | 'user'
 }
 type ArrowLabel = { x: number; y: number; text: string; key: string }
+type ArrowPath = { d: string; color: string; markerId: string; key: string; width: number }
 
 interface ChessBoardProps {
   fen: string
@@ -53,7 +55,8 @@ export function ChessBoard({
   }, [])
 
   const altMoves = bestMoves.slice(0, 5)
-  const neutralArrowColor = 'rgba(148, 163, 184, 0.2)'
+  const neutralArrowColor = 'rgba(148, 163, 184, 0.5)'
+  const userArrowColor = 'rgba(148, 163, 184, 1)'
   const userHighlightColor = 'rgba(59, 130, 246, 0.9)'
   const arrowMoves = useMemo<ArrowMove[]>(() => {
     const items: ArrowMove[] = []
@@ -69,6 +72,7 @@ export function ChessBoard({
         items.push({
           move,
           color: neutralArrowColor,
+          key: `alt-${move.from}-${move.to}-${index}`,
           kind: `alt${index + 1}` as ArrowMove['kind'],
         })
       })
@@ -77,22 +81,69 @@ export function ChessBoard({
     if (userMove && userMove.from !== userMove.to) {
       items.push({
         move: userMove,
-        color: neutralArrowColor,
+        color: userArrowColor,
+        key: `user-${userMove.from}-${userMove.to}`,
         kind: 'user',
       })
     }
 
     return items
-  }, [altMoves, neutralArrowColor, showAlternatives, userMove])
-  const arrows = useMemo(
-    () =>
-      arrowMoves.map((item) => ({
-        startSquare: item.move.from,
-        endSquare: item.move.to,
-        color: item.color,
-      })),
-    [arrowMoves],
-  )
+  }, [altMoves, neutralArrowColor, showAlternatives, userArrowColor, userMove])
+  const arrowPaths = useMemo<ArrowPath[]>(() => {
+    if (!boardWidth || arrowMoves.length === 0) return []
+    const squareSize = boardWidth / 8
+    const strokeWidth = Math.max(2.5, squareSize * 0.12)
+
+    const squareCenter = (square: string) => {
+      if (square.length < 2) return null
+      const file = square.charCodeAt(0) - 97
+      const rank = Number.parseInt(square[1], 10) - 1
+      if (Number.isNaN(file) || Number.isNaN(rank)) return null
+      if (file < 0 || file > 7 || rank < 0 || rank > 7) return null
+      return {
+        x: (file + 0.5) * squareSize,
+        y: (7 - rank + 0.5) * squareSize,
+      }
+    }
+
+    const buildPath = (
+      start: { x: number; y: number },
+      end: { x: number; y: number },
+    ) => {
+      const dxSquares = Math.round((end.x - start.x) / squareSize)
+      const dySquares = Math.round((end.y - start.y) / squareSize)
+      const absDx = Math.abs(dxSquares)
+      const absDy = Math.abs(dySquares)
+      const isKnight =
+        (absDx === 1 && absDy === 2) || (absDx === 2 && absDy === 1)
+
+      if (isKnight) {
+        const horizontalFirst = absDx > absDy
+        const mid = horizontalFirst
+          ? { x: start.x + dxSquares * squareSize, y: start.y }
+          : { x: start.x, y: start.y + dySquares * squareSize }
+        return `M ${start.x} ${start.y} L ${mid.x} ${mid.y} L ${end.x} ${end.y}`
+      }
+
+      return `M ${start.x} ${start.y} L ${end.x} ${end.y}`
+    }
+
+    return arrowMoves
+      .map((item) => {
+        const start = squareCenter(item.move.from)
+        const end = squareCenter(item.move.to)
+        if (!start || !end) return null
+        const path = buildPath(start, end)
+        return {
+          d: path,
+          color: item.color,
+          markerId: item.kind === 'user' ? 'arrowhead-user' : 'arrowhead-alt',
+          key: item.key,
+          width: strokeWidth,
+        }
+      })
+      .filter((item): item is ArrowPath => item !== null)
+  }, [arrowMoves, boardWidth])
   const arrowLabels = useMemo<ArrowLabel[]>(() => {
     if (!boardWidth) return []
     const squareSize = boardWidth / 8
@@ -136,8 +187,8 @@ export function ChessBoard({
       .filter((label): label is ArrowLabel => label !== null)
   }, [arrowMoves, boardWidth])
   const arrowsKey = useMemo(
-    () => arrows.map((arrow) => `${arrow.startSquare}${arrow.endSquare}${arrow.color}`).join('|'),
-    [arrows],
+    () => arrowPaths.map((arrow) => `${arrow.key}${arrow.color}`).join('|'),
+    [arrowPaths],
   )
 
   return (
@@ -152,7 +203,7 @@ export function ChessBoard({
           position: fen,
           allowDragging,
           allowDrawingArrows: false,
-          arrows,
+          arrows: [],
           squareStyles:
             highlightedMove && highlightedMove.from !== highlightedMove.to
               ? {
@@ -181,6 +232,49 @@ export function ChessBoard({
           showNotation: true,
         }}
       />
+      <svg
+        className={styles.boardArrowLayer}
+        width={boardWidth}
+        height={boardWidth}
+        viewBox={`0 0 ${boardWidth} ${boardWidth}`}
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <marker
+            id="arrowhead-alt"
+            markerWidth="4"
+            markerHeight="4"
+            refX="3.2"
+            refY="2"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M0,0 L4,2 L0,4 Z" fill={neutralArrowColor} />
+          </marker>
+          <marker
+            id="arrowhead-user"
+            markerWidth="4"
+            markerHeight="4"
+            refX="3.2"
+            refY="2"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M0,0 L4,2 L0,4 Z" fill={userArrowColor} />
+          </marker>
+        </defs>
+        {arrowPaths.map((arrow) => (
+          <path
+            key={arrow.key}
+            d={arrow.d}
+            fill="none"
+            stroke={arrow.color}
+            strokeWidth={arrow.width}
+            strokeLinecap="round"
+            markerEnd={`url(#${arrow.markerId})`}
+          />
+        ))}
+      </svg>
       <div className={styles.arrowEvalLayer}>
         {arrowLabels.map((label) => (
           <div

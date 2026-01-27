@@ -121,7 +121,7 @@ Click "[← Back to move 15]" → Everything resets to original
 
 ## Iteration 3 (current updates)
 
-- Graph visuals: minimal dark theme with a single neutral light-gray evaluation line and constant-size move dots. Dot fill encodes player only (White = solid white, Black = solid near-black). All dots use the same cool-gray outline purely for legibility; no size scaling by error magnitude. Errors are encoded with an outer ring around the dot (same dot size): inaccuracy = thin yellow ring, mistake = medium orange ring, blunder = thicker red ring. Rings are the loudest elements; line/grid/axes stay subdued. Optional culprit segment per error (i-1 -> i): directional gradient from severity hue at ~0.05 alpha into the error point at ~0.55 alpha, same or +1px stroke, rounded caps; fall back to solid muted segment (~0.45 alpha) if cluttered.
+- Graph visuals: minimal dark theme with a single neutral light-gray evaluation line and constant-size move dots. Dot fill encodes player only (White = solid white, Black = solid near-black). All dots use the same cool-gray outline purely for legibility; no size scaling by error magnitude. Errors are encoded with an outer ring around the dot (same dot size): inaccuracy = thin yellow ring, mistake = medium orange ring, blunder = thicker red ring. Rings are the loudest elements; line/grid/axes stay subdued while the main line remains clearly legible (higher opacity than before). Optional culprit segment per error (i-1 -> i): directional gradient from severity hue at ~0.05 alpha into the error point at ~0.55 alpha, same or +1px stroke, rounded caps; fall back to solid muted segment (~0.45 alpha) if cluttered.
 - Prototype UI: focus on just the board (with pendulum + move strip) and evaluation graph; hide top header, move status, explanation panel, navigation bar, and graph title/legend.
 - Advantage pendulum: vertical indicator to the left of the chessboard that flows up/down based on the current evaluation.
 - Move context: graph shows the played move label (colored like the opponent move in Lichess when applicable). Board shows the resulting position after that move, while the move strip lists the played move plus alternatives from the previous position; selecting an alternative replaces the played move instead of advancing to next moves.
@@ -133,7 +133,10 @@ Click "[← Back to move 15]" → Everything resets to original
 - Progressive refinement: show the first eval quickly, then improve as depth increases until the cap is reached.
 - Navigation priority: cancel the current analysis immediately when the user moves to a new position.
 - UX stability: avoid reordering already-shown moves; only append newly discovered alternatives to prevent flicker.
-- Arrow colors: all arrows use a light transparent neutral; the made move is emphasized via blue square borders on from/to squares.
+- Arrow colors: alternatives use a light transparent neutral; the made move arrow is fully opaque neutral and emphasized further via blue square borders on its from/to squares.
+- Arrow layout: draw straight/diagonal lines whenever possible. Knight moves render as two straight segments (an L shape) to communicate the actual path.
+- Arrow visibility: neutral arrow opacity increased to remain clearly visible on the board; global arrow opacity is set to 1 so per-arrow opacity differences are preserved.
+- Arrow eval badges: always render above the arrow layer for readability.
 - Square highlight: show the last move made by the opponent (from/to squares), not the user's move.
 - Graph evaluation: replace mock evals with single-PV Stockfish evals for every position. Graph updates progressively as new evals arrive.
 - Analysis priority: MultiPV alternatives only for the current position; graph evals are computed in the background starting from the current move and fanning out.

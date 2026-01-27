@@ -11,6 +11,9 @@
   --orange: #f97316;
   --green: #22c55e;
   --lime: #4ade80;
+  --mint: #34d399;
+  --aqua: #2dd4bf;
+  --sky: #38bdf8;
 }
 
 .appShell {
@@ -130,6 +133,35 @@
   cursor: pointer;
 }
 
+.arrowEvalLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.boardArrowLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.arrowEvalBadge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: var(--text);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+
 .moveStrip {
   display: flex;
   flex-direction: column;
@@ -190,15 +222,18 @@
 }
 
 /* Color indicators/accents for different move types */
-.moveCard.alt1 {
-  border-left: 4px solid var(--green);
+.moveCard.alt1,
+.moveCard.alt2,
+.moveCard.alt3,
+.moveCard.alt4,
+.moveCard.alt5 {
+  border-left: 4px solid var(--aqua);
 }
-.moveCard.alt1 .moveEval { color: var(--green); }
-
-.moveCard.alt2 {
-  border-left: 4px solid var(--lime);
-}
-.moveCard.alt2 .moveEval { color: var(--lime); }
+.moveCard.alt1 .moveEval,
+.moveCard.alt2 .moveEval,
+.moveCard.alt3 .moveEval,
+.moveCard.alt4 .moveEval,
+.moveCard.alt5 .moveEval { color: var(--aqua); }
 
 .moveCard.userMove {
   border-left: 4px solid var(--orange);
